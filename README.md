@@ -6,7 +6,7 @@ Power RMQ is a Powershell module that facilitates our PS script to configure Rab
 
 ``` powershell
 
-RegisterUser -username 'guest' -password 'guest' -server 'localhost'
+Register-User -username 'guest' -password 'guest' -server 'localhost'
 
 New-Exchange "my-first-exchange" -type "headers"
 New-Exchange "my-second-exchange" type "fanout
