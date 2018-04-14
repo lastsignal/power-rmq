@@ -27,8 +27,8 @@ It also supports Federation
 
 New-FederationUpstream `
   -vhost "my-vhost" `
-  -name "my-federation-upstream" -`
-  uri "amqp://localhost/%2f" 
+  -name "my-federation-upstream" `
+  -uri "amqp://localhost/%2f" 
   -exchange "some-exchange-in-my-vhost" `
   -maxHops 2
   
