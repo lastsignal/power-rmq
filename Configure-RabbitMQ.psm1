@@ -1,3 +1,7 @@
+###
+###    Reference: https://github.com/lastsignal/power-rmq
+###
+
 function Register-User {
     param([string]$server, [string]$username, [string]$password)
 
