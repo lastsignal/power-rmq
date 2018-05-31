@@ -80,9 +80,9 @@ function Get-Queue {
 }
 
 function New-Queue {
-    param([string]$qname, [string]$vhost="%2f")
+    param([string]$qname, [string]$vhost="%2f", [string]$body='{"auto_delete":false,"durable":true,"arguments":{}}')
 
-    Invoke-Put queues/$vhost/$qname -body '{"auto_delete":false,"durable":true,"arguments":{}}'
+    Invoke-Put queues/$vhost/$qname -body $body
 }
 
 function Remove-Queue {
@@ -105,9 +105,7 @@ function Get-Exchange {
 }
 
 function New-Exchange {
-    param([string]$name, [string]$type, [string]$vhost = '%2f')
-
-    $body = @"
+    param([string]$name, [string]$type, [string]$vhost = '%2f', [string]$body=@"
     {
         "type":"$type",
         "auto_delete":false,
@@ -115,7 +113,7 @@ function New-Exchange {
         "internal":false,
         "arguments":{}
     }
-"@
+"@)
     Invoke-Put -resource "exchanges/$vhost/$name" -body $body
 }
 
@@ -253,6 +251,14 @@ function New-User {
 
     Invoke-Put -resource "users/$name" -body @"
         {"password":"$password", "tags":"$tags"}
+"@
+}
+
+function New-UserWithHash {
+    param([string]$name, [string]$passwordHash, [string]$tags="")
+
+    Invoke-Put -resource "users/$name" -body @"
+        {"password_hash":"$passwordHash", "tags":"$tags"}
 "@
 }
 
