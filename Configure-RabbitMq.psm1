@@ -80,9 +80,9 @@ function Get-Queue {
 }
 
 function New-Queue {
-    param([string]$qname, [string]$vhost="%2f", [string]$body='{"auto_delete":false,"durable":true,"arguments":{}}')
+    param([string]$name, [string]$vhost="%2f", [string]$body='{"auto_delete":false,"durable":true,"arguments":{}}')
 
-    Invoke-Put queues/$vhost/$qname -body $body
+    Invoke-Put queues/$vhost/$name -body $body
 }
 
 function Remove-Queue {
@@ -280,3 +280,20 @@ function Add-Permission {
 "@
     
 }
+
+function Select-GlobalParameters {
+    Invoke-Get -resource "global-parameters"
+}
+
+function Add-GlobalParameter {
+    param([string]$name, $value)
+    Invoke-Put -resource "global-parameters/$name" -body @"
+        {"name":"$name","value": "$value" }
+"@
+}
+
+function Remove-GlobalParameter {
+    param([string]$name)
+    Invoke-Delete -resource "global-parameters/$name"
+}
+
