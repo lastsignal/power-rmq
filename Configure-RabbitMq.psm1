@@ -6,7 +6,7 @@ function Register-User {
     param([string]$server, [string]$username, [string]$password)
 
     $script:apiBase = "http://$server`:15672/api"
-    
+
     $script:auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username, $password)))    
 }
 
@@ -26,7 +26,10 @@ function Invoke-Rest {
 
     $headers = @{Authorization = ("Basic {0}" -f $script:auth)}
 
+    write-host ("{0}:{1}" -f $method, $resource) -ForegroundColor Yellow
+
     if($method -eq "Get" -or $method -eq "Delete") {
+
         $q = Invoke-RestMethod `
             -Headers $headers `
             -Method $method `
@@ -34,6 +37,7 @@ function Invoke-Rest {
             -Uri "$script:apiBase/$resource"
         return $q
     } else {        
+
         Invoke-RestMethod `
             -Headers $headers `
             -Method $method `
@@ -88,7 +92,7 @@ function New-Queue {
 function Remove-Queue {
     param([string]$name, [string]$vhost="%2f")
 
-    [void] (Invoke-Delete queues/$vhost/$name)
+    [void] (Invoke-Delete -resource "queues/$vhost/$name")
 }
 
 function Select-Exchanges {
@@ -152,11 +156,11 @@ function Remove-E2EBinding {
 function Remove-E2QBinding {
     param([string]$source, [string]$destination, [string]$props, [string]$vhost="%2f")
         
-    Invoke-Delete -Uri "$apiBase/bindings/$vhost/e/$source/q/$destination/$props"
+    Invoke-Delete -resource "bindings/$vhost/e/$source/q/$destination/$props"
 }
 
 function Select-Vhosts {
-    Invoke-Get -Uri "$apiBase/vhosts"
+    Invoke-Get -resource "vhosts"
 }
 
 function New-Vhost {
@@ -165,8 +169,16 @@ function New-Vhost {
     Invoke-Put -resource "vhosts/$name"
 }
 
+function Remove-Vhost {
+    param([string] $name)
+
+    Invoke-Delete -resource "vhosts/$name"
+}
+
 function New-FederationUpstream{
-    param([string]$exchange, [string]$uri, [string]$name, [int]$maxHops=1, [string]$vhost="%2f")
+    param([string]$exchange, [string[]]$uris, [string]$name, [int]$maxHops=1, [string]$vhost="%2f")
+
+    $endpoint = $uris | ConvertTo-Json
 
     $parameter = @"
     {
@@ -176,7 +188,7 @@ function New-FederationUpstream{
         "message-ttl": 43200000,
         "reconnect-delay": 11,
         "trust-user-id": false,
-        "uri": "$uri",
+        "uri": $endpoint,
         "max-hops": $maxHops
       },
       "vhost": "$vhost",
@@ -209,6 +221,14 @@ function New-Policy {
     $body = $parameters | ConvertTo-Json
 
     Invoke-Put -resource "policies/$vhost/$name" -body $body.ToString()
+}
+
+function Remove-Policy {
+    param(
+    [string]$name,
+    [string]$vhost="%2f")
+
+    Invoke-Delete -resource "policies/$vhost/$name" 
 }
 
 function New-UpstreamPolicy {
