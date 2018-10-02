@@ -317,3 +317,8 @@ function Remove-GlobalParameter {
     Invoke-Delete -resource "global-parameters/$name"
 }
 
+function Remove-QueueContents {
+    param($vhost, $queue)
+
+    Invoke-Delete "queues/$vhost/$queue/contents"
+}
