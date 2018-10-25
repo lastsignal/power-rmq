@@ -232,20 +232,18 @@ function Remove-Policy {
 }
 
 function New-UpstreamPolicy {
-    param([string]$upstreamName, [string]$pattern, [string]$name, [string]$vhost="%2f")
+    param([string]$upstreamName, [string]$pattern, [string]$name, [string]$vhost="%2f", [hashtable]$additionalDefinitions=@{})
 
-    $parameter = @"
-    {
-        "vhost": "$vhost",
-        "name": "$name",
-        "pattern": "$pattern",
-        "apply-to": "exchanges",
-        "definition": {
-          "federation-upstream": "$upstreamName"
-        },
-        "priority": 0
+    $additionalDefinitions.Add("federation-upstream", $upstreamName)
+
+    $parameters = @{
+        "vhost"= "$vhost";
+        "name"= "$name";
+        "pattern"= "$pattern";
+        "apply-to"= "exchanges";
+        "definition"= $additionalDefinitions;
+        "priority"=$priority
     }
-"@
 
     Invoke-Put -resource "policies/$vhost/$name" -body $parameter
 }
@@ -317,3 +315,27 @@ function Remove-GlobalParameter {
     Invoke-Delete -resource "global-parameters/$name"
 }
 
+function Select-Connections {
+    param($vhost)
+
+    if($vhost -eq $null) {
+        $resource = "connections"
+    }
+    else {
+        $resource = "vhosts/$vhost/connections"
+    }
+
+    Invoke-Get -resource $resource
+}
+
+function Remove-Connection {
+    param($name)
+
+    Invoke-Delete "connections/$name"
+}
+
+function Remove-QueueContents {
+    param($vhost, $queue)
+
+    Invoke-Delete "queues/$vhost/$queue/contents"
+}
