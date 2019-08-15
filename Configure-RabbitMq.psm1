@@ -176,7 +176,7 @@ function Remove-Vhost {
 }
 
 function New-FederationUpstream{
-    param([string]$exchange, [string[]]$uris, [string]$name, [int]$maxHops=1, [string]$vhost="%2f")
+    param([string]$exchange, [string[]]$uris, [string]$name, [int]$maxHops=1, [string]$vhost="%2f", [int]$messageTtl=43200000)
 
     $endpoint = $uris | ConvertTo-Json
 
@@ -185,7 +185,7 @@ function New-FederationUpstream{
       "value": {
         "ack-mode": "on-confirm",
         "exchange": "$exchange",
-        "message-ttl": 43200000,
+        "message-ttl": $messageTtl,
         "reconnect-delay": 11,
         "trust-user-id": false,
         "uri": $endpoint,
