@@ -3,11 +3,18 @@
 ###
 
 function Register-User {
-    param([string]$server, [string]$username, [string]$password)
+    param(
+        [string]$server, 
+        [string]$username, 
+        [string]$password, 
+        [ValidateSet('http', 'https')]
+        [string]$protocol='https')
 
-    $script:apiBase = "http://$server`:15672/api"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    $script:auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username, $password)))    
+    $script:apiBase = "$protocol`://$server`:15672/api"
+    $script:apiBase
+    $script:auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username, $password)))
 }
 
 function Unregister-User {
@@ -176,7 +183,7 @@ function Remove-Vhost {
 }
 
 function New-FederationUpstream{
-    param([string]$exchange, [string[]]$uris, [string]$name, [int]$maxHops=1, [string]$vhost="%2f")
+    param([string]$exchange, [string[]]$uris, [string]$name, [int]$maxHops=1, [string]$vhost="%2f", [int]$messageTtl=43200000)
 
     $endpoint = $uris | ConvertTo-Json
 
@@ -185,7 +192,7 @@ function New-FederationUpstream{
       "value": {
         "ack-mode": "on-confirm",
         "exchange": "$exchange",
-        "message-ttl": 43200000,
+        "message-ttl": $messageTtl,
         "reconnect-delay": 11,
         "trust-user-id": false,
         "uri": $endpoint,
@@ -232,20 +239,18 @@ function Remove-Policy {
 }
 
 function New-UpstreamPolicy {
-    param([string]$upstreamName, [string]$pattern, [string]$name, [string]$vhost="%2f")
+    param([string]$upstreamName, [string]$pattern, [string]$name, [string]$vhost="%2f", [hashtable]$additionalDefinitions=@{})
 
-    $parameter = @"
-    {
-        "vhost": "$vhost",
-        "name": "$name",
-        "pattern": "$pattern",
-        "apply-to": "exchanges",
-        "definition": {
-          "federation-upstream": "$upstreamName"
-        },
-        "priority": 0
+    $additionalDefinitions.Add("federation-upstream", $upstreamName)
+
+    $parameters = @{
+        "vhost"= "$vhost";
+        "name"= "$name";
+        "pattern"= "$pattern";
+        "apply-to"= "exchanges";
+        "definition"= $additionalDefinitions;
+        "priority"=$priority
     }
-"@
 
     Invoke-Put -resource "policies/$vhost/$name" -body $parameter
 }
@@ -315,6 +320,25 @@ function Add-GlobalParameter {
 function Remove-GlobalParameter {
     param([string]$name)
     Invoke-Delete -resource "global-parameters/$name"
+}
+
+function Select-Connections {
+    param($vhost)
+
+    if($vhost -eq $null) {
+        $resource = "connections"
+    }
+    else {
+        $resource = "vhosts/$vhost/connections"
+    }
+
+    Invoke-Get -resource $resource
+}
+
+function Remove-Connection {
+    param($name)
+
+    Invoke-Delete "connections/$name"
 }
 
 function Remove-QueueContents {
