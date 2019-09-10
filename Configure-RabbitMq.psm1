@@ -3,11 +3,18 @@
 ###
 
 function Register-User {
-    param([string]$server, [string]$username, [string]$password)
+    param(
+        [string]$server, 
+        [string]$username, 
+        [string]$password, 
+        [ValidateSet('http', 'https')]
+        [string]$protocol='https')
 
-    $script:apiBase = "http://$server`:15672/api"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    $script:auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username, $password)))    
+    $script:apiBase = "$protocol`://$server`:15672/api"
+    $script:apiBase
+    $script:auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username, $password)))
 }
 
 function Unregister-User {
