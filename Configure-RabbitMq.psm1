@@ -15,6 +15,8 @@ function Register-User {
     $script:apiBase = "$protocol`://$server`:15672/api"
     $script:apiBase
     $script:auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username, $password)))
+
+    Write-Information "Register to $server"
 }
 
 function Unregister-User {
@@ -183,28 +185,31 @@ function Remove-Vhost {
 }
 
 function New-FederationUpstream{
-    param([string]$exchange, [string[]]$uris, [string]$name, [int]$maxHops=1, [string]$vhost="%2f", [int]$messageTtl=43200000)
+    param([string]$exchange, [string[]]$uris, [string]$name, [int]$maxHops=1, [string]$vhost="%2f", [System.Nullable[System.Int32]]$messageTtl=$null)
 
-    $endpoint = $uris | ConvertTo-Json
+    $endpoint = $uris 
 
-    $parameter = @"
-    {
-      "value": {
-        "ack-mode": "on-confirm",
-        "exchange": "$exchange",
-        "message-ttl": $messageTtl,
-        "reconnect-delay": 11,
-        "trust-user-id": false,
-        "uri": $endpoint,
-        "max-hops": $maxHops
-      },
-      "vhost": "$vhost",
-      "component": "federation-upstream",
-      "name": "$name"
+    $parameters = @{
+      "value" = @{
+        "ack-mode" = "on-confirm";
+        "exchange" = "$exchange";
+        "reconnect-delay" = 11;
+        "trust-user-id" = $false;
+        "uri" = $endpoint;
+        "max-hops" = $maxHops;
+      };
+      "vhost" = "$vhost";
+      "component" = "federation-upstream";
+      "name" = "$name";
     }
-"@
 
-    Invoke-put -resource "parameters/federation-upstream/$vhost/$name" -body $parameter
+    if($messageTtl -ne $null){
+        $parameters.value["message-ttl"] = $messageTtl
+    }
+
+    $body = $parameters | ConvertTo-Json
+
+    Invoke-put -resource "parameters/federation-upstream/$vhost/$name" -body $body
 }
 
 function New-Policy {
@@ -239,7 +244,7 @@ function Remove-Policy {
 }
 
 function New-UpstreamPolicy {
-    param([string]$upstreamName, [string]$pattern, [string]$name, [string]$vhost="%2f", [hashtable]$additionalDefinitions=@{})
+    param([string]$upstreamName, [string]$pattern, [string]$name, [string]$vhost="%2f", [hashtable]$additionalDefinitions=@{}, $priority=0)
 
     $additionalDefinitions.Add("federation-upstream", $upstreamName)
 
@@ -252,7 +257,9 @@ function New-UpstreamPolicy {
         "priority"=$priority
     }
 
-    Invoke-Put -resource "policies/$vhost/$name" -body $parameter
+    $body = $parameters | ConvertTo-Json
+
+    Invoke-Put -resource "policies/$vhost/$name" -body $body
 }
 
 function Select-Users {
